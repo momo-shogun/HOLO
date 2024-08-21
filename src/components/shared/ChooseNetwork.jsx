@@ -10,7 +10,7 @@ import {
   SelectGroup,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import MnemonicCont from "./mnemonicCont";
+import MnemonicCont from "./MnemonicCont";
 
 function ChooseNetwork({ giveMnemonic, mnemonic }) {
   const [walletType, setWalletType] = useState("Solana");
