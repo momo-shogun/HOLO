@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { mnemonicToSeed } from "bip39";
 import { derivePath } from "ed25519-hd-key";
 import { Keypair } from "@solana/web3.js";
@@ -19,6 +19,8 @@ export function CreateWallet({ mnemonic, walletType }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [solanaKeys, setSolanaKeys] = useState([]);
   const [ethereumKeys, setEthereumKeys] = useState([]);
+  const [SolanaBalances, setSolanaBalances] = useState([]);
+  const [EthBalances, setEthBalances] = useState([]);
 
   async function addWalletSolana() {
     const seed = await mnemonicToSeed(mnemonic);
@@ -64,6 +66,82 @@ export function CreateWallet({ mnemonic, walletType }) {
     }
   }
 
+  // Function to fetch the balance for a sol public key
+  const showBalance = async (publicKey, index) => {
+    try {
+      const response = await fetch(
+        "https://solana-mainnet.g.alchemy.com/v2/LOhFHVWCZP6_jevw1PxtuWqUe0a5WI8N",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "getBalance",
+            params: [publicKey],
+          }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      const newBalances = [...SolanaBalances];
+      newBalances[index] = result.result.value;
+      setSolanaBalances(newBalances);
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+    }
+  };
+
+  // Fucntion to fetch the balance for eth public keys
+  const showBalanceEth = async (publicKey, index) => {
+    try {
+      const response = await fetch(
+        "https://eth-mainnet.g.alchemy.com/v2/LOhFHVWCZP6_jevw1PxtuWqUe0a5WI8N",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "eth_getBalance",
+            params: [publicKey, "latest"],
+          }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      const resultInDec = parseFloat(result.result) / Math.pow(10, 18);
+      const newBalances = [...EthBalances];
+
+      newBalances[index] = resultInDec;
+      setEthBalances(newBalances);
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+    }
+  };
+
+  // useEffect to fetch balances for each wallet in case of solana wallets
+
+  useEffect(() => {
+    solanaKeys.forEach((p, index) => {
+      showBalance(p.pubKey, index);
+    });
+  }, [solanaKeys]);
+
+  useEffect(() => {
+    ethereumKeys.map((key, index) => {
+      showBalanceEth(key.pubKey, index);
+    });
+  }, [ethereumKeys]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between ">
@@ -82,7 +160,7 @@ export function CreateWallet({ mnemonic, walletType }) {
             <CardHeader>
               <CardTitle className="flex justify-between">
                 Wallet {index + 1}
-                <div className="">$100</div>
+                <div className="">${SolanaBalances[index]}</div>
               </CardTitle>
             </CardHeader>
             <CardContent className="py-4 space-y-6 bg-gray-800 rounded-lg">
@@ -100,7 +178,10 @@ export function CreateWallet({ mnemonic, walletType }) {
         ethereumKeys.map((p, index) => (
           <Card key={index} className="">
             <CardHeader>
-              <CardTitle>Wallet {index + 1}</CardTitle>
+              <CardTitle className="flex justify-between">
+                Wallet {index + 1}
+                <div className="">${EthBalances[index]}</div>
+              </CardTitle>
             </CardHeader>
             <CardContent className="py-4 space-y-6 bg-gray-800 rounded-lg">
               <div className="space-y-1">
