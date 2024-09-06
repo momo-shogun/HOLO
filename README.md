@@ -1,4 +1,4 @@
-# 🌐 Web3 Wallet Project
+# 🌐 Web Wallet Project
 
 Welcome to the Web-Based Wallet Project! 
 - Currently supports both Solana and Ethereum blockchains.
